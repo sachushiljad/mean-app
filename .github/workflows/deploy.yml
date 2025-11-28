@@ -46,19 +46,19 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # Stop and remove all containers
+          docker stop $(docker ps -q) || true
+          docker rm $(docker ps -aq) || true
+
+          # Remove old network if exists
+          docker network rm mean-network || true
+          docker network create mean-network
+
+          # Pull latest images
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mean-frontend:latest
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mean-backend:latest
 
-          docker stop mean-frontend || true
-          docker stop mean-backend || true
-          docker stop mean-mongo || true
-
-          docker rm mean-frontend || true
-          docker rm mean-backend || true
-          docker rm mean-mongo || true
-
-          docker network create mean-network || true
-
+          # Run containers
           docker run -d --name mean-mongo --network mean-network -p 27017:27017 mongo:6.0
           docker run -d --name mean-backend --network mean-network -p 3000:3000 \
             ${{ secrets.DOCKERHUB_USERNAME }}/mean-backend:latest
